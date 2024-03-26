@@ -84,17 +84,19 @@ class MsAzureADUserRegDetails(Script):
         # Placeholder to store all user registration details
         all_user_registration_details = []
         
+        counter = 0
+        
         try:
             # Make the initial request to retrieve user registration details
             response = requests.get(user_registration_url, headers=headers)
             if response.status_code == 200:
                 
+                counter = counter + 1
+                
                 ew.log("INFO", f"MS Azure AD userRegistrationDetails first page successfully collected.")
                 
                 user_registration_details = response.json()
                 all_user_registration_details.extend(user_registration_details['value'])
-                
-                counter = 1
 
                 # Check if there are more pages
                 while '@odata.nextLink' in user_registration_details:
@@ -104,11 +106,11 @@ class MsAzureADUserRegDetails(Script):
                         
                         counter = counter + 1
                         
-                        ew.log("INFO", f"MS Azure AD userRegistrationDetails page {str(counter)} successfully collected.")
-                        
                         user_registration_details = response.json()
                         all_user_registration_details.extend(user_registration_details['value'])
                     else:
+                        # TO-DO: Address throttling by retrying.
+                        ew.log("ERROR", f"Unsuccessful MS Graph Request. `nextLink` error, status_code={str(response.status_code)}")
                         break
             else:
                 ew.log("ERROR", f"Unsuccessful MS Graph Request. status_code={str(response.status_code)}")
@@ -116,7 +118,7 @@ class MsAzureADUserRegDetails(Script):
             ew.log("ERROR", f"Unsuccessful MS Graph Request. Error: {str(e)}")
             sys.exit(1)
         
-        ew.log("INFO", "Successful MS Graph Request.")
+        ew.log("INFO", f"Successful MS Graph Request - multiple pages (total of {str(counter)}) collected.")
         
         return all_user_registration_details
 
